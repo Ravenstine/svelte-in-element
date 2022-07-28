@@ -57,4 +57,16 @@ describe('in-element component', () => {
         cy.get('#target-b h2').should('not.exist');
       });
   });
+
+  it('supports query selector string target', () => {
+    cy.visit('/query-selector');
+
+    cy.get('#target h2').should('exist');
+  });
+
+  it('does nothing and throws no error when no target provided', () => {
+    cy.visit('/no-target');
+
+    cy.get('#target h2').should('not.exist');
+  });
 });

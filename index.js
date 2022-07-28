@@ -20,7 +20,11 @@ function createBound() {
 }
 
 function getParams(ctx) {
-	let [,,target,insertBefore] = ctx[2].ctx;
+	let [target, insertBefore] = Array.isArray(ctx) ? ctx : ctx[2].ctx;
+
+	if (typeof target === 'string') target = document.querySelector(target);
+
+	if (typeof insertBefore === 'string') insertBefore = document.querySelector(insertBefore);
 
 	if (!target && insertBefore) target = insertBefore.parentElement;
 
@@ -36,6 +40,8 @@ function createSlot(template, ctx, scope) {
 	return {
 		...slot,
 		m: function mountSlot() {
+			if (!target) return;
+
 			if (target && !insertBefore && insertBefore !== null) {
 				const nodes = children(target);
 
@@ -54,7 +60,7 @@ function createSlot(template, ctx, scope) {
 			return slot.m(target, endBound);
 		},
 		d: function detachSlot(detaching) {
-			if (!detaching) return;
+			if (!detaching || !target) return;
 
 			detach_between_dev(startBound, endBound);
 			detach_dev(startBound);
@@ -63,7 +69,7 @@ function createSlot(template, ctx, scope) {
 	};
 }
 
-function create_fragment(ctx) {
+function createFragment(ctx) {
 	const default_slot_template = /*#slots*/ ctx[3].default;
 
 	let current;
@@ -115,6 +121,7 @@ function create_fragment(ctx) {
 		},
 		o: function transitionOutFragment(local) {
 			transition_out(default_slot, local);
+
 			current = false;
 		},
 		d: function detachFragment(detaching) {
@@ -125,21 +132,21 @@ function create_fragment(ctx) {
 
 function instance($$self, $$props, $$invalidate) {
 	let { $$slots: slots = {}, $$scope } = $$props;
-	let { element, insertBefore } = $$props;
+	let { target, insertBefore } = $$props;
 
 	$$self.$$set = $$props => {
-		if ('element' in $$props) $$invalidate(0, element = $$props.element);
+		if ('target' in $$props) $$invalidate(0, target = $$props.target);
 		if ('insertBefore' in $$props) $$invalidate(1, insertBefore = $$props.insertBefore);
 		if ('$$scope' in $$props) $$invalidate(2, $$scope = $$props.$$scope);
 	};
 
-	return [element, insertBefore, $$scope, slots];
+	return [target, insertBefore, $$scope, slots];
 }
 
 export default class InElement extends SvelteComponent {
 	constructor(options) {
 		super();
 
-		init(this, options, instance, create_fragment, safe_not_equal, { target: 0, insertBefore: 1 });
+		init(this, options, instance, createFragment, safe_not_equal, { target: 0, insertBefore: 1 });
 	}
 }

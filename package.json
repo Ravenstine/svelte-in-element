@@ -1,6 +1,6 @@
 {
   "name": "svelte-in-element",
-  "version": "0.0.3",
+  "version": "0.1.0",
   "description": "Render parts of a Svelte component in arbitrary elements",
   "main": "index.js",
   "scripts": {
