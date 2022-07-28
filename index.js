@@ -8,118 +8,116 @@ import {
 	transition_in,
 	transition_out,
 	update_slot_base,
+	insert,
 	detach_dev,
-	detach_before_dev,
-	detach_after_dev,
 	detach_between_dev,
-	children
+	children,
+	append
 } from "svelte/internal";
+
+function createBound() {
+	return document.createComment('');
+}
 
 function getParams(ctx) {
 	let [,,target,insertBefore] = ctx[2].ctx;
 
 	if (!target && insertBefore) target = insertBefore.parentElement;
 
-	let insertAfter = (() => {
-		if (insertBefore) return insertBefore.previousSibling;
+	return { target, insertBefore };
+}
 
-		if (insertBefore === null && target) return target.lastChild;
-	})();
+function createSlot(template, ctx, scope) {
+	const { target, insertBefore } = getParams(ctx);
+	const slot = create_slot(template, ctx, scope, null);
+	const startBound = createBound();
+	const endBound = createBound();
 
-	return { target, insertBefore, insertAfter };
+	return {
+		...slot,
+		m: function mountSlot() {
+			if (target && !insertBefore && insertBefore !== null) {
+				const nodes = children(target);
+
+				for (const node of nodes)
+					detach_dev(node);
+			}
+
+			if (insertBefore) {
+				insert(target, startBound, insertBefore);
+				insert(target, endBound, insertBefore);
+			} else {
+				append(target, startBound);
+				append(target, endBound);
+			}
+
+			return slot.m(target, endBound);
+		},
+		d: function detachSlot(detaching) {
+			if (!detaching) return;
+
+			detach_between_dev(startBound, endBound);
+			detach_dev(startBound);
+			detach_dev(endBound);
+		},
+	};
 }
 
 function create_fragment(ctx) {
-	let current;
 	const default_slot_template = /*#slots*/ ctx[3].default;
-	const { target, insertBefore } = getParams(ctx);
 
-	let insertAfter;
+	let current;
 
-	function createSlot() {
-		const slot = create_slot(default_slot_template, ctx, /*$$scope*/ ctx[2], null);
-
-		return {
-			...slot,
-			m() {
-				insertAfter = getParams(ctx).insertAfter;
-
-				if (target && !insertBefore && insertBefore !== null) {
-					const nodes = children(target);
-
-					for (const node of nodes)
-						detach_dev(node);
-				}
-
-				return slot.m(target, insertBefore);
-			},
-			d(detaching) {
-				if (!detaching) return;
-
-				if (insertBefore && insertAfter) {
-					return detach_between_dev(insertAfter, insertBefore);
-				} else if (insertBefore) {
-					return detach_before_dev(insertBefore);
-				} else if (insertAfter) {
-					return detach_after_dev(insertAfter);
-				} else if (target) {
-					for (const child of children(target)) {
-						detach_dev(child);
-					}
-				}
-			},
-		};
-	}
-
-	let default_slot = createSlot();
+	let default_slot = createSlot(default_slot_template, ctx, /*$$scope*/ ctx[2], null);
 
 	return {
-		c() {
+		c: function createFragment() {
 			if (default_slot) default_slot.c();
 		},
-		m(target, anchor) {
-			if (default_slot) {
+		m: function mountFragment(target, anchor) {
+			if (default_slot)
 				default_slot.m(target, anchor);
-			}
 
 			current = true;
 		},
-		p(ctx, [dirty]) {
-			if (default_slot) {
-				if (default_slot.p && (!current || dirty & /*$$scope*/ 4)) {
-					update_slot_base(
-						default_slot,
-						default_slot_template,
-						ctx,
-						/*$$scope*/ ctx[2],
-						!current
-						? get_all_dirty_from_scope(/*$$scope*/ ctx[2])
-						: get_slot_changes(default_slot_template, /*$$scope*/ ctx[2], dirty, null),
-						null
-					);
-				} else {
-					default_slot.d(true);
+		p: function updateFragment(ctx, [dirty]) {
+			if (!default_slot) return;
 
-					default_slot = create_slot(default_slot_template, ctx, /*$$scope*/ ctx[2], null);
+			if (default_slot.p && (!current || dirty & /*$$scope*/ 4)) {
+				update_slot_base(
+					default_slot,
+					default_slot_template,
+					ctx,
+					/*$$scope*/ ctx[2],
+					!current
+					? get_all_dirty_from_scope(/*$$scope*/ ctx[2])
+					: get_slot_changes(default_slot_template, /*$$scope*/ ctx[2], dirty, null),
+					null
+				);
+			} else {
+				default_slot.d(true);
 
-					default_slot.c();
+				default_slot = createSlot(default_slot_template, ctx, /*$$scope*/ ctx[2], null);
 
-					const { target, insertBefore } = getParams(ctx);
+				default_slot.c();
 
-					default_slot.m(target, insertBefore);
-				}
+				const { target, insertBefore } = getParams(ctx);
+
+				default_slot.m(target, insertBefore);
 			}
 		},
-		i(local) {
+		i: function transitionInFragment(local) {
 			if (current) return;
+
 			transition_in(default_slot, local);
+
 			current = true;
 		},
-		o(local) {
+		o: function transitionOutFragment(local) {
 			transition_out(default_slot, local);
 			current = false;
 		},
-		d(detaching) {
+		d: function detachFragment(detaching) {
 			if (default_slot) default_slot.d(detaching);
 		}
 	};
