@@ -7,25 +7,71 @@ import {
 	safe_not_equal,
 	transition_in,
 	transition_out,
-	update_slot_base
+	update_slot_base,
+	detach_dev,
+	detach_before_dev,
+	detach_after_dev,
+	detach_between_dev,
+	children
 } from "svelte/internal";
 
-function instance($$self, $$props, $$invalidate) {
-	let { $$slots: slots = {}, $$scope } = $$props;
-	let { target } = $$props;
+function getParams(ctx) {
+	let [,,target,insertBefore] = ctx[2].ctx;
 
-	$$self.$$set = $$props => {
-		if ('target' in $$props) $$invalidate(0, target = $$props.target);
-		if ('$$scope' in $$props) $$invalidate(1, $$scope = $$props.$$scope);
-	};
+	if (!target && insertBefore) target = insertBefore.parentElement;
 
-	return [target, $$scope, slots];
+	let insertAfter = (() => {
+		if (insertBefore) return insertBefore.previousSibling;
+
+		if (insertBefore === null && target) return target.lastChild;
+	})();
+
+	return { target, insertBefore, insertAfter };
 }
 
 function create_fragment(ctx) {
 	let current;
-	const default_slot_template = /*#slots*/ ctx[2].default;
-	const default_slot = create_slot(default_slot_template, ctx, /*$$scope*/ ctx[1], null);
+	const default_slot_template = /*#slots*/ ctx[3].default;
+	const { target, insertBefore } = getParams(ctx);
+
+	let insertAfter;
+
+	function createSlot() {
+		const slot = create_slot(default_slot_template, ctx, /*$$scope*/ ctx[2], null);
+
+		return {
+			...slot,
+			m() {
+				insertAfter = getParams(ctx).insertAfter;
+
+				if (target && !insertBefore && insertBefore !== null) {
+					const nodes = children(target);
+
+					for (const node of nodes)
+						detach_dev(node);
+				}
+
+				return slot.m(target, insertBefore);
+			},
+			d(detaching) {
+				if (!detaching) return;
+
+				if (insertBefore && insertAfter) {
+					return detach_between_dev(insertAfter, insertBefore);
+				} else if (insertBefore) {
+					return detach_before_dev(insertBefore);
+				} else if (insertAfter) {
+					return detach_after_dev(insertAfter);
+				} else if (target) {
+					for (const child of children(target)) {
+						detach_dev(child);
+					}
+				}
+			},
+		};
+	}
+
+	let default_slot = createSlot();
 
 	return {
 		c() {
@@ -40,17 +86,27 @@ function create_fragment(ctx) {
 		},
 		p(ctx, [dirty]) {
 			if (default_slot) {
-				if (default_slot.p && (!current || dirty & /*$$scope*/ 2)) {
+				if (default_slot.p && (!current || dirty & /*$$scope*/ 4)) {
 					update_slot_base(
 						default_slot,
 						default_slot_template,
 						ctx,
-						/*$$scope*/ ctx[1],
+						/*$$scope*/ ctx[2],
 						!current
-						? get_all_dirty_from_scope(/*$$scope*/ ctx[1])
-						: get_slot_changes(default_slot_template, /*$$scope*/ ctx[1], dirty, null),
+						? get_all_dirty_from_scope(/*$$scope*/ ctx[2])
+						: get_slot_changes(default_slot_template, /*$$scope*/ ctx[2], dirty, null),
 						null
 					);
+				} else {
+					default_slot.d(true);
+
+					default_slot = create_slot(default_slot_template, ctx, /*$$scope*/ ctx[2], null);
+
+					default_slot.c();
+
+					const { target, insertBefore } = getParams(ctx);
+
+					default_slot.m(target, insertBefore);
 				}
 			}
 		},
@@ -69,33 +125,23 @@ function create_fragment(ctx) {
 	};
 }
 
+function instance($$self, $$props, $$invalidate) {
+	let { $$slots: slots = {}, $$scope } = $$props;
+	let { element, insertBefore } = $$props;
+
+	$$self.$$set = $$props => {
+		if ('element' in $$props) $$invalidate(0, element = $$props.element);
+		if ('insertBefore' in $$props) $$invalidate(1, insertBefore = $$props.insertBefore);
+		if ('$$scope' in $$props) $$invalidate(2, $$scope = $$props.$$scope);
+	};
+
+	return [element, insertBefore, $$scope, slots];
+}
+
 export default class InElement extends SvelteComponent {
-	constructor({ props: { $$scope, $$slots, target } }) {
+	constructor(options) {
 		super();
 
-		const options = {
-			target,
-			props: {
-				$$scope,
-				$$slots: {
-					default: [
-						function (ctx) {
-							const slot = $$slots.default[0](ctx);
-
-							return {
-								...slot,
-								m(_target, anchor) {
-									if (_target === target) return;
-
-									return slot.m(target, anchor);
-								},
-							};
-						}
-					]
-				},
-			}
-		};
-
-		init(this, options, instance, create_fragment, safe_not_equal, { target: 0 });
+		init(this, options, instance, create_fragment, safe_not_equal, { target: 0, insertBefore: 1 });
 	}
 }

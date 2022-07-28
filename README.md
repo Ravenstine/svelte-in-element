@@ -27,6 +27,17 @@ npm install --save svelte-in-element
 </InElement>
 ```
 
+An optional `insertBefore` parameter allows you to insert the content at a specific position in the target.
+
+
+## Expected Behavior
+
+- If the `target` is undefined, null, false, 0, "", etc., nothing is rendered and there is no error.
+- If `insertBefore` is provided, the block will be rendered before the given element.  If the `insertBefore` element is removed or changes position, problems will occur during rerendering and detachment.
+- If `insertAfter` is provided, the block will be rendered after the given element.  Otherwise follows same rules as `insertBefore`.
+- If `target`, `insertBefore`, or `insertAfter` changes, content will be removed from the original position in the DOM and added to the new destination.
+- By default, the content of the target element is removed *unless* the value of `insertBefore` is a DOM node or `null`.  When `null` is passed, the last child of the target element is treated as a boundary.
+
 
 ## License
 

@@ -2,7 +2,7 @@ describe('in-element component', () => {
   it('renders block in arbitrary element', () => {
     cy.visit('/');
 
-    cy.get('#target h2')
+    cy.get('#target-a h2')
       .should((h2) => {
         expect(h2).to.have.text('Hello World');
       });
@@ -14,7 +14,7 @@ describe('in-element component', () => {
     cy.get('input')
       .type('!')
       .then(() => {
-        cy.get('#target h2')
+        cy.get('#target-a h2')
         .should((h2) => {
           expect(h2).to.have.text('Hello World!');
         });
@@ -24,16 +24,37 @@ describe('in-element component', () => {
   it('handles child removal', () => {
     cy.visit('/');
 
-    cy.get('button')
+    cy.get('button#show-hide')
       .click()
       .then(() => {
-        return cy.get('#target h2').should('not.exist');
+        return cy.get('#target-a h2').should('not.exist');
       })
       .then(() => {
-        return cy.get('button').click();
+        return cy.get('button#show-hide').click();
       })
       .then(() => {
-        return cy.get('#target h2').should('exist');
+        return cy.get('#target-a h2').should('exist');
+      });
+  });
+
+  it('dynamically switches targets', () => {
+    cy.visit('/');
+
+    cy.get('#target-a h2').should('exist');
+    cy.get('#target-b h2').should('not.exist');
+
+    cy.get('button#switch-target')
+      .click()
+      .then(() => {
+        cy.get('#target-a h2').should('not.exist');
+        cy.get('#target-b h2').should('exist');
+      })
+      .then(() => {
+        return cy.get('button#switch-target').click();
+      })
+      .then(() => {
+        cy.get('#target-a h2').should('exist');
+        cy.get('#target-b h2').should('not.exist');
       });
   });
 });
