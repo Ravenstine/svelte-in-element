@@ -44,7 +44,6 @@ An optional `insertBefore` parameter allows you to insert the content at a speci
 - If `insertBefore` is provided, the block will be rendered before the given element.
 - If `target` or `insertBefore` changes, content will be removed from the original position in the DOM and added to the new destination.
 - By default, the content of the target element is removed *unless* the value of `insertBefore` is a DOM node or `null`.  When `null` is passed, the last child of the target element is treated as a boundary.
-- If the target element is unavailable, nothing is rendered.
 
 At present, this component will do nothing under server-side rendering.
 
