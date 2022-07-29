@@ -3,7 +3,7 @@ Svelte In-Element
 
 Need to render content from a Svelte component within an arbitrary element?  We've got you covered.
 
-This package is inspired by the [in-element](https://github.com/emberjs/ember.js/blob/48112f90e6d5e21ac5da9a1d539148fbd91a16ff/packages/%40ember/-internals/glimmer/lib/syntax/in-element.ts) helper from [Ember.js](https://emberjs.com).
+This package is inspired by the [in-element](https://github.com/emberjs/ember.js/blob/48112f90e6d5e21ac5da9a1d539148fbd91a16ff/packages/%40ember/-internals/glimmer/lib/syntax/in-element.ts) helper from [Ember.js](https://emberjs.com).  It is similar to concepts like [React portals](https://reactjs.org/docs/portals.html) and [Vue "teleport"](https://vuejs.org/guide/built-ins/teleport.html).
 
 
 ## Installation
