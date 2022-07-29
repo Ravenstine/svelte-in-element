@@ -12,7 +12,9 @@ import {
 	detach_dev,
 	detach_between_dev,
 	children,
-	append
+	append,
+	create_ssr_component,
+	is_client
 } from "svelte/internal";
 
 function createBound() {
@@ -57,6 +59,8 @@ function createSlot(template, ctx, scope) {
 				append(target, endBound);
 			}
 
+			if (is_client) this.c();
+
 			return slot.m(target, endBound);
 		},
 		d: function detachSlot(detaching) {
@@ -86,6 +90,7 @@ function createFragment(ctx) {
 
 			current = true;
 		},
+		l() {},
 		p: function updateFragment(ctx, [dirty]) {
 			if (!default_slot) return;
 
@@ -143,10 +148,17 @@ function instance($$self, $$props, $$invalidate) {
 	return [target, insertBefore, $$scope, slots];
 }
 
+const { render, $$render } = create_ssr_component(() => '');
+
 export default class InElement extends SvelteComponent {
+	static render = render;
+	static $$render = $$render;
+
 	constructor(options) {
 		super();
 
-		init(this, options, instance, createFragment, safe_not_equal, { target: 0, insertBefore: 1 });
+		const opts = { ...options, hydrate: false };
+
+		init(this, opts, instance, createFragment, safe_not_equal, { target: 0, insertBefore: 1 });
 	}
 }
