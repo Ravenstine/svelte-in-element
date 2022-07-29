@@ -1,6 +1,6 @@
 {
   "name": "svelte-in-element",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Render parts of a Svelte component in arbitrary elements",
   "keywords": ["svelte", "in-element", "wormhole", "portal", "stargate", "elsewhere", "teleport"],
   "main": "index.js",
