@@ -1,8 +1,9 @@
 {
   "name": "svelte-in-element",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Render parts of a Svelte component in arbitrary elements",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "start": "vite",
     "cy:run": "cypress run",
